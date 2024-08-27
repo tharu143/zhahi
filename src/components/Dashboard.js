@@ -4,12 +4,12 @@ import axios from "axios";
 import Sidenavbar from "./Sidenavbar";
 import PersonalDetails from "./PersonalDetails";
 import CertificateVerification from "./CertificateVerification";
-import ProjectSheet from "./ProjectSheet";
+import StudentReportSheet from "./StudentReportSheet";
 import StaffPersonalDetails from "./StaffPersonalDetails";
 import StudentAttendance from "./StudentAttendance";
 import StaffWorksheet from "./StaffWorksheet";
 import StaffTaskSheet from "./StaffTaskSheet";
-import Attendance from "./Attendance";
+import AddCourse from "./AddCourse";
 import Intern from "./Intern";
 import Fees from "./Fees";
 import StudentDetails from "./StudentDetails";
@@ -80,12 +80,12 @@ const Dashboard = () => {
           {activeSection === "studentDetails" && <StudentDetails />}
           {activeSection === "personalDetails" && <PersonalDetails />}
           {activeSection === "certificateVerification" && <CertificateVerification />}
-          {activeSection === "projectSheet" && <ProjectSheet />}
+          {activeSection === "studentreportsheet" && <StudentReportSheet />}
           {activeSection === "studentAttendance" && <StudentAttendance />}
           {activeSection === "staffPersonalDetails" && <StaffPersonalDetails />}
           {activeSection === "staffWorksheet" && <StaffWorksheet />}
           {activeSection === "staffTaskSheet" && <StaffTaskSheet />}
-          {activeSection === "attendance" && <Attendance />}
+          {activeSection === "AddCourse" && <AddCourse />}
           {activeSection === "intern" && <Intern />}
           {activeSection === "fees" && <Fees />}
         </main>

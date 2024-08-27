@@ -1,255 +1,225 @@
-import React, { useState, useEffect } from "react";
-import { jsPDF } from "jspdf";
-import {
-  getFeeRecords,
-  createFeeRecord,
-  updateFeeRecord,
-  deleteFeeRecord,
-  searchStudents,
-} from "../api/feesApi";
+import React, { useState } from 'react';
+import { searchStudents, getFeeRecords, createFeeRecord, updateFeeRecord } from '../api/feesApi';
 
 const Fees = () => {
-  const [records, setRecords] = useState([]);
-  const [form, setForm] = useState({
-    id: null,
-    studentId: "",
-    amount: "",
-    date: "",
-    paymentType: "", // "monthly" or "full"
-  });
-  const [editing, setEditing] = useState(false);
-  const [students, setStudents] = useState([]);
-  const [error, setError] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [studentDetails, setStudentDetails] = useState(null);
+  const [feeRecords, setFeeRecords] = useState([]);
+  const [paymentType, setPaymentType] = useState('full'); // 'full' or 'monthly'
+  const [paymentDate, setPaymentDate] = useState('');
+  const [nextDueDate, setNextDueDate] = useState('');
+  const [status, setStatus] = useState(''); // 'paid' or 'unpaid'
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState(''); // Success message
 
-  useEffect(() => {
-    fetchFeeRecords();
-    fetchStudents();
-  }, []);
-
-  const fetchFeeRecords = async () => {
+  const handleSearch = async (e) => {
+    e.preventDefault();
     try {
-      const data = await getFeeRecords();
-      setRecords(data);
+      if (!searchTerm) {
+        setError("Please enter a search term.");
+        return;
+      }
+
+      // Search for student by name or ID
+      const studentsByName = await searchStudents(searchTerm);
+      const student = studentsByName.length > 0 ? studentsByName[0] : null;
+
+      if (student) {
+        setStudentDetails(student);
+        setError(null);
+        setSuccess('Student found successfully');
+        // Fetch fee records for the student
+        await fetchFeeRecords(student._id);
+      } else {
+        setError("No student found.");
+        setStudentDetails(null);
+        setFeeRecords([]);
+      }
     } catch (error) {
+      setError("Failed to search student.");
+      console.error("Error searching student:", error);
+    }
+  };
+
+  const fetchFeeRecords = async (studentId) => {
+    try {
+      // Fetch fee records based on student ID
+      const records = await getFeeRecords(); // Assuming getFeeRecords returns all records
+      const studentFeeRecords = records.filter(record => record.studentId === studentId);
+      setFeeRecords(studentFeeRecords);
+    } catch (error) {
+      setError("Failed to fetch fee records.");
       console.error("Error fetching fee records:", error);
-      setError("Failed to fetch fee records");
     }
   };
 
-  const fetchStudents = async () => {
-    try {
-      const data = await searchStudents(""); // Fetch all students initially
-      setStudents(data);
-    } catch (error) {
-      console.error("Error fetching students:", error);
-      setError("Failed to fetch students");
-    }
-  };
-
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setForm({ ...form, [name]: value });
-  };
-
-  const handleAdd = async () => {
-    if (form.studentId && form.amount && form.date && form.paymentType) {
-      try {
-        await createFeeRecord(form);
-        fetchFeeRecords();
-        setForm({
-          id: null,
-          studentId: "",
-          amount: "",
-          date: "",
-          paymentType: "",
-        });
-      } catch (error) {
-        console.error("Error creating fee record:", error);
-        setError("Failed to create fee record");
+  const calculateNextDueDate = () => {
+    if (paymentDate) {
+      const date = new Date(paymentDate);
+      if (paymentType === 'monthly') {
+        date.setMonth(date.getMonth() + 1);
+      } else if (paymentType === 'full') {
+        date.setMonth(date.getMonth() + 6); // Example: next due in 6 months
       }
+      setNextDueDate(date.toISOString().split('T')[0]);
     }
   };
 
-  const handleEdit = (record) => {
-    setForm(record);
-    setEditing(true);
-  };
-
-  const handleUpdate = async () => {
-    if (form.studentId && form.amount && form.date && form.paymentType) {
-      try {
-        await updateFeeRecord(form.id, form);
-        fetchFeeRecords();
-        setForm({
-          id: null,
-          studentId: "",
-          amount: "",
-          date: "",
-          paymentType: "",
-        });
-        setEditing(false);
-      } catch (error) {
-        console.error("Error updating fee record:", error);
-        setError("Failed to update fee record");
-      }
-    }
-  };
-
-  const handleDelete = async (id) => {
+  const handleSubmit = async (e) => {
+    e.preventDefault();
     try {
-      await deleteFeeRecord(id);
-      fetchFeeRecords();
+      if (!studentDetails) {
+        setError("No student details available.");
+        return;
+      }
+
+      const feeRecord = {
+        studentId: studentDetails._id,
+        paymentType,
+        paymentDate,
+        nextDueDate,
+        status,
+      };
+
+      if (feeRecords.length > 0) {
+        // Update existing record
+        await updateFeeRecord(feeRecords[0]._id, feeRecord);
+      } else {
+        // Create new record
+        await createFeeRecord(feeRecord);
+      }
+
+      setSuccess('Fee record saved successfully');
+      setError('');
+      // Refetch fee records
+      await fetchFeeRecords(studentDetails._id);
     } catch (error) {
-      console.error("Error deleting fee record:", error);
-      setError("Failed to delete fee record");
+      setError("Failed to save fee record.");
+      console.error("Error saving fee record:", error);
     }
-  };
-
-  const generatePDF = () => {
-    const doc = new jsPDF();
-    doc.text("Fee Records", 14, 16);
-    doc.setFontSize(12);
-
-    let y = 30;
-    records.forEach((record) => {
-      doc.text(`Student: ${record.studentId.name}`, 14, y);
-      doc.text(`Amount: ${record.amount}`, 14, y + 10);
-      doc.text(`Date: ${record.date}`, 14, y + 20);
-      doc.text(`Payment Type: ${record.paymentType}`, 14, y + 30);
-      y += 50;
-    });
-
-    doc.save("fee_records.pdf");
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-4 md:p-6 lg:p-8">
-      <div className="w-full max-w-4xl bg-white p-6 rounded-lg shadow-md">
-        <h1 className="text-2xl md:text-3xl font-bold mb-6">Fees Management</h1>
+    <div className="p-4 bg-white rounded shadow-md max-w-4xl mx-auto">
+      <h1 className="text-2xl font-bold mb-4 text-center">Fee Management</h1>
+      <form onSubmit={handleSearch} className="mb-4 flex flex-col md:flex-row items-center gap-4">
+        <input
+          type="text"
+          placeholder="Search by name or student ID"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="border p-2 rounded w-full"
+        />
+        <button
+          type="submit"
+          className="bg-blue-500 text-white px-4 py-2 rounded mt-2"
+        >
+          Search
+        </button>
+      </form>
 
-        {/* Form for adding or editing records */}
-        <div className="mb-6">
-          <h2 className="text-xl md:text-2xl font-semibold mb-4">
-            {editing ? "Edit Fee Record" : "Add New Fee Record"}
-          </h2>
+      {error && <div className="text-red-500 text-center mb-4">{error}</div>}
+      {success && <div className="text-green-500 text-center mb-4">{success}</div>}
+
+      {studentDetails && (
+        <div className="bg-gray-100 p-4 rounded shadow-md">
           <div className="mb-4">
-            <label className="block mb-2 font-semibold">Student</label>
-            <select
-              name="studentId"
-              value={form.studentId}
-              onChange={handleInputChange}
-              className="w-full p-2 border border-gray-300 rounded text-sm md:text-base"
-            >
-              <option value="">Select Student</option>
-              {students.map((student) => (
-                <option key={student._id} value={student._id}>
-                  {student.name}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="mb-4">
-            <label className="block mb-2 font-semibold">Amount</label>
-            <input
-              type="number"
-              name="amount"
-              value={form.amount}
-              onChange={handleInputChange}
-              className="w-full p-2 border border-gray-300 rounded text-sm md:text-base"
+            <img
+              src={studentDetails.studentPicPath}
+              alt="Profile"
+              className="w-32 h-32 object-cover rounded-full mx-auto"
             />
           </div>
-          <div className="mb-4">
-            <label className="block mb-2 font-semibold">Date</label>
-            <input
-              type="date"
-              name="date"
-              value={form.date}
-              onChange={handleInputChange}
-              className="w-full p-2 border border-gray-300 rounded text-sm md:text-base"
-            />
+          <div className="mb-2">
+            <strong>ID:</strong> {studentDetails._id}
           </div>
-          <div className="mb-4">
-            <label className="block mb-2 font-semibold">Payment Type</label>
-            <select
-              name="paymentType"
-              value={form.paymentType}
-              onChange={handleInputChange}
-              className="w-full p-2 border border-gray-300 rounded text-sm md:text-base"
+          <div className="mb-2">
+            <strong>Name:</strong> {studentDetails.name}
+          </div>
+          <div className="mb-2">
+            <strong>Course:</strong> {studentDetails.courseName}
+          </div>
+          <div className="mb-2">
+            <strong>Batch:</strong> {studentDetails.batch}
+          </div>
+          <div className="mb-2">
+            <strong>Mode:</strong> {studentDetails.mode}
+          </div>
+
+          {feeRecords.length > 0 ? (
+            <div>
+              <h3 className="text-lg font-semibold mb-2">Fee Records</h3>
+              <ul>
+                {feeRecords.map((record) => (
+                  <li key={record._id} className="mb-2">
+                    <p>Payment Type: {record.paymentType}</p>
+                    <p>Payment Date: {record.paymentDate}</p>
+                    <p>Next Due Date: {record.nextDueDate}</p>
+                    <p>Status: {record.status}</p>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : (
+            <p>No fee records found for this student.</p>
+          )}
+
+          <form onSubmit={handleSubmit}>
+            <div className="mb-4">
+              <label className="block mb-2">Payment Type:</label>
+              <select
+                value={paymentType}
+                onChange={(e) => {
+                  setPaymentType(e.target.value);
+                  calculateNextDueDate();
+                }}
+                className="border p-2 rounded w-full"
+              >
+                <option value="full">Full Payment</option>
+                <option value="monthly">Monthly Payment</option>
+              </select>
+            </div>
+            <div className="mb-4">
+              <label className="block mb-2">Payment Date:</label>
+              <input
+                type="date"
+                value={paymentDate}
+                onChange={(e) => {
+                  setPaymentDate(e.target.value);
+                  calculateNextDueDate();
+                }}
+                className="border p-2 rounded w-full"
+              />
+            </div>
+            <div className="mb-4">
+              <label className="block mb-2">Next Due Date:</label>
+              <input
+                type="text"
+                value={nextDueDate}
+                readOnly
+                className="border p-2 rounded w-full"
+              />
+            </div>
+            <div className="mb-4">
+              <label className="block mb-2">Status:</label>
+              <select
+                value={status}
+                onChange={(e) => setStatus(e.target.value)}
+                className="border p-2 rounded w-full"
+              >
+                <option value="paid">Paid</option>
+                <option value="unpaid">Unpaid</option>
+              </select>
+            </div>
+            <button
+              type="submit"
+              className="bg-green-500 text-white px-4 py-2 rounded"
             >
-              <option value="">Select Payment Type</option>
-              <option value="monthly">Monthly</option>
-              <option value="full">Full</option>
-            </select>
-          </div>
-          <div>
-            {editing ? (
-              <button
-                onClick={handleUpdate}
-                className="bg-blue-500 text-white px-4 py-2 rounded text-sm md:text-base"
-              >
-                Update Record
-              </button>
-            ) : (
-              <button
-                onClick={handleAdd}
-                className="bg-blue-500 text-white px-4 py-2 rounded text-sm md:text-base"
-              >
-                Add Record
-              </button>
-            )}
-          </div>
+              Save Fee Record
+            </button>
+          </form>
         </div>
-
-        {/* PDF Generation Button */}
-        <div className="mb-6">
-          <button
-            onClick={generatePDF}
-            className="bg-green-500 text-white px-4 py-2 rounded text-sm md:text-base"
-          >
-            Generate PDF
-          </button>
-        </div>
-
-        {/* Table of fee records */}
-        <div>
-          <h2 className="text-xl md:text-2xl font-semibold mb-4">Fee Records</h2>
-          <table className="w-full border border-gray-300 rounded text-sm md:text-base">
-            <thead>
-              <tr className="bg-gray-200">
-                <th className="p-2 border">Student</th>
-                <th className="p-2 border">Amount</th>
-                <th className="p-2 border">Date</th>
-                <th className="p-2 border">Payment Type</th>
-                <th className="p-2 border">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {records.map((record) => (
-                <tr key={record._id}>
-                  <td className="p-2 border">{record.studentId.name}</td> {/* Ensure this is a string */}
-                  <td className="p-2 border">{record.amount}</td>
-                  <td className="p-2 border">{record.date}</td>
-                  <td className="p-2 border">{record.paymentType}</td>
-                  <td className="p-2 border">
-                    <button
-                      onClick={() => handleEdit(record)}
-                      className="bg-yellow-500 text-white px-2 py-1 rounded text-sm md:text-base mr-2"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => handleDelete(record._id)}
-                      className="bg-red-500 text-white px-2 py-1 rounded text-sm md:text-base"
-                    >
-                      Delete
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      )}
     </div>
   );
 };

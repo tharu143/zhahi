@@ -1,4 +1,4 @@
-const API_URL = "http://localhost:5000/api/attendance"; // Update to your actual attendance API endpoint
+const API_URL = "http://localhost:5000/api/attendance";
 
 // Fetch all attendance records
 export const getAttendanceRecords = async () => {
@@ -13,6 +13,7 @@ export const getAttendanceRecords = async () => {
     throw error;
   }
 };
+
 // Create a new attendance record
 export const createAttendanceRecord = async (attendance) => {
   try {
@@ -68,11 +69,11 @@ export const deleteAttendanceRecord = async (id) => {
   }
 };
 
-// Fetch students for the dropdown
+// Search for students by name
 export const searchStudents = async (name) => {
   try {
     const response = await fetch(
-      `http://localhost:5000/api/students/search?name=${encodeURIComponent(name)}` // Update to your actual search API endpoint
+      `http://localhost:5000/api/students/search?name=${encodeURIComponent(name)}`
     );
     if (!response.ok) {
       throw new Error("Network response was not ok");

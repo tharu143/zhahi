@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 const Sidenavbar = ({ setActiveSection }) => {
   const [showStudentDropdown, setShowStudentDropdown] = useState(false);
   const [showStaffDropdown, setShowStaffDropdown] = useState(false);
+  const [showCourseDropdown, setShowCourseDropdown] = useState(false);
 
   const handleClick = (section) => {
     setActiveSection(section);
@@ -14,6 +15,8 @@ const Sidenavbar = ({ setActiveSection }) => {
       setShowStudentDropdown(!showStudentDropdown);
     } else if (dropdown === "staff") {
       setShowStaffDropdown(!showStaffDropdown);
+    } else if (dropdown === "course") {
+      setShowCourseDropdown(!showCourseDropdown);
     }
   };
 
@@ -38,6 +41,7 @@ const Sidenavbar = ({ setActiveSection }) => {
           </button>
           {showStudentDropdown && (
             <ul className="pl-4 mt-2">
+              {/* Existing student dropdown items */}
               <li className="mb-2">
                 <Link
                   to="#"
@@ -68,13 +72,12 @@ const Sidenavbar = ({ setActiveSection }) => {
               <li className="mb-2">
                 <Link
                   to="#"
-                  onClick={() => handleClick("projectSheet")}
+                  onClick={() => handleClick("studentreportsheet")}
                   className="block py-3 px-4 hover:bg-gray-600 rounded"
                 >
-                  Project Sheet
+                  StudentReportSheet
                 </Link>
               </li>
-              
               <li className="mb-2">
                 <Link
                   to="#"
@@ -82,6 +85,15 @@ const Sidenavbar = ({ setActiveSection }) => {
                   className="block py-3 px-4 hover:bg-gray-600 rounded"
                 >
                   Student Attendance
+                </Link>
+              </li>
+              <li className="mb-2">
+                <Link
+                  to="#"
+                  onClick={() => handleClick("fees")}
+                  className="block py-3 px-4 hover:bg-gray-600 rounded"
+                >
+                  Fees
                 </Link>
               </li>
             </ul>
@@ -127,13 +139,43 @@ const Sidenavbar = ({ setActiveSection }) => {
           )}
         </li>
         <li className="mb-2">
-          <Link
-            to="#"
-            onClick={() => handleClick("attendance")}
-            className="block py-3 px-4 hover:bg-gray-700 rounded"
+          <button
+            onClick={() => toggleDropdown("course")}
+            className="block py-3 px-4 w-full text-left hover:bg-gray-700 rounded"
           >
-            Attendance
-          </Link>
+            Course
+          </button>
+          {showCourseDropdown && (
+            <ul className="pl-4 mt-2">
+               <li className="mb-2">
+                <Link
+                  to="#"
+                  onClick={() => handleClick("AddCourse")}
+                  className="block py-3 px-4 hover:bg-gray-600 rounded"
+                >
+                  AddCourse
+                </Link>
+              </li>
+              <li className="mb-2">
+                <Link
+                  to="#"
+                  onClick={() => handleClick("ViewCourses")}
+                  className="block py-3 px-4 hover:bg-gray-600 rounded"
+                >
+                  View Courses
+                </Link>
+              </li>
+              <li className="mb-2">
+                <Link
+                  to="#"
+                  onClick={() => handleClick("AssignCourse")}
+                  className="block py-3 px-4 hover:bg-gray-600 rounded"
+                >
+                  Assign Course to Student
+                </Link>
+              </li>
+            </ul>
+          )}
         </li>
         <li className="mb-2">
           <Link
@@ -142,15 +184,6 @@ const Sidenavbar = ({ setActiveSection }) => {
             className="block py-3 px-4 hover:bg-gray-700 rounded"
           >
             Intern
-          </Link>
-        </li>
-        <li className="mb-2">
-          <Link
-            to="#"
-            onClick={() => handleClick("fees")}
-            className="block py-3 px-4 hover:bg-gray-700 rounded"
-          >
-            Fees
           </Link>
         </li>
       </ul>

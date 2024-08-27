@@ -6,11 +6,12 @@ const StudentDetails = () => {
   const [studentDetails, setStudentDetails] = useState(null);
   const [error, setError] = useState(null);
   const [selectedStudentId, setSelectedStudentId] = useState(null);
-  const [updatedStudent, setUpdatedStudent] = useState({}); // State to hold updated student details
+  const [updatedStudent, setUpdatedStudent] = useState({});
+  const [showUpdateForm, setShowUpdateForm] = useState(false);
 
   useEffect(() => {
     if (studentDetails) {
-      setUpdatedStudent(studentDetails); // Initialize update form with current student details
+      setUpdatedStudent(studentDetails);
     }
   }, [studentDetails]);
 
@@ -22,22 +23,20 @@ const StudentDetails = () => {
       }
 
       if (searchTerm.includes("zhahi")) {
-        // If searchTerm contains "zhahi", search by ID
         const student = await getStudentById(searchTerm);
         if (student) {
           setStudentDetails(student);
-          setSelectedStudentId(student._id); // Set selected student ID
+          setSelectedStudentId(student._id);
           setError(null);
         } else {
           setError("No student found.");
           setStudentDetails(null);
         }
       } else {
-        // Search by name
         const studentsByName = await searchStudents(searchTerm);
         if (studentsByName.length > 0) {
           setStudentDetails(studentsByName[0]);
-          setSelectedStudentId(studentsByName[0]._id); // Set selected student ID
+          setSelectedStudentId(studentsByName[0]._id);
           setError(null);
         } else {
           setError("No student found.");
@@ -54,8 +53,9 @@ const StudentDetails = () => {
     try {
       if (selectedStudentId) {
         await updateStudent(selectedStudentId, updatedStudent);
-        setStudentDetails(updatedStudent); // Update student details
+        setStudentDetails(updatedStudent);
         alert("Student updated successfully.");
+        setShowUpdateForm(false); // Hide form after update
       }
     } catch (error) {
       setError("Failed to update student.");
@@ -86,8 +86,8 @@ const StudentDetails = () => {
   };
 
   return (
-    <div className="p-4 bg-white rounded shadow-md">
-      <h1 className="text-2xl font-bold mb-4">Student Details</h1>
+    <div className="p-4 bg-white rounded shadow-md max-w-4xl mx-auto">
+      <h1 className="text-2xl font-bold mb-4 text-center">Student Details</h1>
       <div className="mb-4">
         <input
           type="text"
@@ -104,11 +104,52 @@ const StudentDetails = () => {
         </button>
       </div>
 
-      {error && <div className="text-red-500">{error}</div>}
+      {error && <div className="text-red-500 text-center mb-4">{error}</div>}
 
-      {studentDetails && (
-        <div>
-          <div>
+      {studentDetails && !showUpdateForm && (
+        <div className="bg-gray-100 p-4 rounded shadow-md text-center">
+          <div className="mb-4">
+            <img
+              src={studentDetails.studentPicPath}
+              alt="Profile"
+              className="w-32 h-32 object-cover rounded-full mx-auto"
+            />
+          </div>
+          <div className="mb-2">
+            <strong>ID:</strong> {studentDetails._id}
+          </div>
+          <div className="mb-2">
+            <strong>Name:</strong> {studentDetails.name}
+          </div>
+          <div className="mb-2">
+            <strong>Course:</strong> {studentDetails.courseName}
+          </div>
+          <div className="mb-2">
+            <strong>Batch:</strong> {studentDetails.batch}
+          </div>
+          <div className="mb-2">
+            <strong>Mode:</strong> {studentDetails.mode}
+          </div>
+          <div className="mt-4 flex justify-center gap-4">
+            <button
+              onClick={() => setShowUpdateForm(true)}
+              className="bg-green-500 text-white px-4 py-2 rounded"
+            >
+              Update
+            </button>
+            <button
+              onClick={handleDelete}
+              className="bg-red-500 text-white px-4 py-2 rounded"
+            >
+              Delete
+            </button>
+          </div>
+        </div>
+      )}
+
+      {showUpdateForm && studentDetails && (
+        <div className="mt-4">
+          <div className="mb-2">
             <strong>Name:</strong>
             <input
               type="text"
@@ -118,101 +159,53 @@ const StudentDetails = () => {
               className="border p-2 rounded w-full mt-1"
             />
           </div>
-          <div>
-            <strong>ID:</strong> {studentDetails._id}
-          </div>
-          <div>
-            <strong>Department:</strong>
+          <div className="mb-2">
+            <strong>Course:</strong>
             <input
               type="text"
-              name="department"
-              value={updatedStudent.department || ""}
+              name="courseName"
+              value={updatedStudent.courseName || ""}
               onChange={handleChange}
               className="border p-2 rounded w-full mt-1"
             />
           </div>
-          <div>
-            <strong>Degree:</strong>
-            <input
-              type="text"
-              name="degree"
-              value={updatedStudent.degree || ""}
+          <div className="mb-2">
+            <strong>Batch:</strong>
+            <select
+              name="batch"
+              value={updatedStudent.batch || ""}
               onChange={handleChange}
               className="border p-2 rounded w-full mt-1"
-            />
+            >
+              <option value="Morning">Morning</option>
+              <option value="Evening">Evening</option>
+            </select>
           </div>
-          <div>
-            <strong>Aadhar No:</strong>
-            <input
-              type="text"
-              name="aadharNo"
-              value={updatedStudent.aadharNo || ""}
+          <div className="mb-2">
+            <strong>Mode:</strong>
+            <select
+              name="mode"
+              value={updatedStudent.mode || ""}
               onChange={handleChange}
               className="border p-2 rounded w-full mt-1"
-            />
+            >
+              <option value="Online">Online</option>
+              <option value="Offline">Offline</option>
+            </select>
           </div>
-          <div>
-            <strong>DOB:</strong>
-            <input
-              type="date"
-              name="dob"
-              value={updatedStudent.dob || ""}
-              onChange={handleChange}
-              className="border p-2 rounded w-full mt-1"
-            />
-          </div>
-          <div>
-            <strong>Phone No:</strong>
-            <input
-              type="text"
-              name="phoneNo"
-              value={updatedStudent.phoneNo || ""}
-              onChange={handleChange}
-              className="border p-2 rounded w-full mt-1"
-            />
-          </div>
-          <div>
-            <strong>Email:</strong>
-            <input
-              type="email"
-              name="mailId"
-              value={updatedStudent.mailId || ""}
-              onChange={handleChange}
-              className="border p-2 rounded w-full mt-1"
-            />
-          </div>
-          <div>
-            <strong>LinkedIn:</strong>
-            <input
-              type="text"
-              name="linkedinId"
-              value={updatedStudent.linkedinId || ""}
-              onChange={handleChange}
-              className="border p-2 rounded w-full mt-1"
-            />
-          </div>
-          <div>
-            <strong>GitHub:</strong>
-            <input
-              type="text"
-              name="githubId"
-              value={updatedStudent.githubId || ""}
-              onChange={handleChange}
-              className="border p-2 rounded w-full mt-1"
-            />
-          </div>
-          <div className="mt-4">
+          {/* Add other fields here as needed */}
+          <div className="mt-4 flex justify-center gap-4">
             <button
               onClick={handleUpdate}
-              className="bg-green-500 text-white px-4 py-2 rounded mr-2"
+              className="bg-green-500 text-white px-4 py-2 rounded"
             >
-              Update
+              Save
             </button>
             <button
-              onClick={handleDelete}
-              className="bg-red-500 text-white px-4 py-2 rounded"
+              onClick={() => setShowUpdateForm(false)}
+              className="bg-gray-500 text-white px-4 py-2 rounded"
             >
-              Delete
+              Cancel
             </button>
           </div>
         </div>
